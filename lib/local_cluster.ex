@@ -46,15 +46,19 @@ defmodule LocalCluster do
   @spec start_nodes(binary, integer, Keyword.t) :: [ atom ]
   def start_nodes(prefix, amount, options \\ [])
   when (is_binary(prefix) or is_atom(prefix)) and is_integer(amount) do
-    nodes = Enum.map(1..amount, fn idx ->
-      { :ok, name } = :slave.start_link(
+    # Start all nodes in parallel to save time
+    # We cannot use :slave.start_link/3 from a Task; slaves have to be stopped by calling stop_nodes/1 or stop/0
+    nodeResults = Enum.map(1..amount, &Task.async(fn ->
+      { :ok, _name } = :slave.start(
         '127.0.0.1',
-        :"#{prefix}#{idx}",
+        :"#{prefix}#{&1}",
         # Configure :logger and :sasl to reduce log clutter during application startup
         '-loader inet -hosts 127.0.0.1 -setcookie "#{:erlang.get_cookie()}" -logger level warn -sasl errlog_type error'
       )
-      name
-    end)
+    end))
+    |> Enum.map(&Task.await(&1))
+
+    nodes = Enum.map(nodeResults, &(elem(&1, 1)))
 
     rpc = &({ _, [] } = :rpc.multicall(nodes, &1, &2, &3))
 
@@ -97,6 +101,7 @@ defmodule LocalCluster do
 
   @doc """
   Stops the current distributed node and turns it back into a local node.
+  All slave nodes are terminated.
   """
   @spec stop :: :ok | { :error, atom }
   def stop,
