@@ -50,7 +50,8 @@ defmodule LocalCluster do
       { :ok, name } = :slave.start_link(
         '127.0.0.1',
         :"#{prefix}#{idx}",
-        '-loader inet -hosts 127.0.0.1 -setcookie "#{:erlang.get_cookie()}"'
+        # Configure :logger and :sasl to reduce log clutter during application startup
+        '-loader inet -hosts 127.0.0.1 -setcookie "#{:erlang.get_cookie()}" -logger level warn -sasl errlog_type error'
       )
       name
     end)
