@@ -71,5 +71,19 @@ defmodule LocalClusterTest do
     assert_receive :from_node_1
     assert_receive :from_node_2
     assert_receive :from_node_3
+
+    :ok = LocalCluster.stop_nodes(nodes)
+  end
+
+  test "creates many child nodes" do
+    nodes = LocalCluster.start_nodes(:child, 10)
+    assert length(nodes) == 10
+    for node <- nodes do
+      assert Node.ping(node) == :pong
+    end
+    :ok = LocalCluster.stop_nodes(nodes)
+    for node <- nodes do
+      assert Node.ping(node) == :pang
+    end
   end
 end
