@@ -40,8 +40,7 @@ defmodule LocalCluster.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      applications: [:logger],
-      extra_applications: [:logger]
+      extra_applications: [:logger, :global_flags]
     ]
   end
 
